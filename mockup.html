@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoTrade AI - 条件設定型自動売買ツール</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f5f5f7;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-menu a {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            transition: opacity 0.3s;
+        }
+
+        .nav-menu a:hover {
+            opacity: 0.8;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: rgba(255,255,255,0.1);
+            padding: 8px 20px;
+            border-radius: 25px;
+        }
+
+        /* メインコンテンツ */
+        .main-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #1a1a2e;
+        }
+
+        .page-subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        /* ステータスカード */
+        .status-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .status-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .status-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .status-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #1a1a2e;
+        }
+
+        .status-change {
+            font-size: 14px;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-change.positive {
+            color: #10b981;
+        }
+
+        .status-change.negative {
+            color: #ef4444;
+        }
+
+        /* 条件設定パネル */
+        .condition-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            margin-bottom: 30px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .panel-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a2e;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        /* 条件設定フォーム */
+        .condition-form {
+            display: grid;
+            gap: 25px;
+        }
+
+        .form-group {
+            display: grid;
+            gap: 10px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .form-hint {
+            font-size: 13px;
+            color: #666;
+            margin-top: -5px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        /* 条件ビルダー */
+        .condition-builder {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .condition-item {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .condition-select {
+            flex: 1;
+        }
+
+        .condition-operator {
+            width: 100px;
+        }
+
+        .condition-value {
+            width: 150px;
+        }
+
+        .btn-remove {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn-add-condition {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .btn-add-condition:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        /* アクション設定 */
+        .action-settings {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .action-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .action-card:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .action-card.selected {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .action-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .action-description {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* センチメントインジケーター */
+        .sentiment-indicator {
+            background: linear-gradient(90deg, #ef4444 0%, #f59e0b 25%, #10b981 100%);
+            height: 40px;
+            border-radius: 20px;
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .sentiment-pointer {
+            position: absolute;
+            top: -5px;
+            width: 50px;
+            height: 50px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            transition: left 0.3s ease;
+        }
+
+        .sentiment-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        /* 取引履歴 */
+        .history-table {
+            width: 100%;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .history-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .history-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #666;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .history-table td {
+            padding: 15px;
+            border-top: 1px solid #eee;
+        }
+
+        .history-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        /* レスポンシブ */
+        @media (max-width: 768px) {
+            .action-settings {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .condition-panel {
+                padding: 20px;
+            }
+        }
+
+        /* アニメーション */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">📊</div>
+                AutoTrade AI
+            </div>
+            <nav class="nav-menu">
+                <a href="#dashboard">ダッシュボード</a>
+                <a href="#conditions">条件設定</a>
+                <a href="#history">取引履歴</a>
+                <a href="#analytics">分析</a>
+            </nav>
+            <div class="user-info">
+                <span>山田太郎</span>
+                <span style="font-size: 12px; opacity: 0.8;">プレミアムプラン</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="main-container">
+        <h1 class="page-title">自動売買条件設定</h1>
+        <p class="page-subtitle">あなたの投資戦略に基づいて、自動売買の条件を設定しましょう</p>
+
+        <!-- ステータスカード -->
+        <div class="status-cards">
+            <div class="status-card animate-fade">
+                <div class="status-label">現在のセンチメントスコア</div>
+                <div class="status-value">72</div>
+                <div class="status-change positive">↑ +12 (1時間前より)</div>
+            </div>
+            <div class="status-card animate-fade" style="animation-delay: 0.1s">
+                <div class="status-label">アクティブな条件数</div>
+                <div class="status-value">3</div>
+                <div class="status-change">実行待機中: 2</div>
+            </div>
+            <div class="status-card animate-fade" style="animation-delay: 0.2s">
+                <div class="status-label">今月の取引回数</div>
+                <div class="status-value">24</div>
+                <div class="status-change positive">勝率: 66.7%</div>
+            </div>
+            <div class="status-card animate-fade" style="animation-delay: 0.3s">
+                <div class="status-label">今月の損益</div>
+                <div class="status-value">+¥42,350</div>
+                <div class="status-change positive">↑ +5.2%</div>
+            </div>
+        </div>
+
+        <!-- リアルタイムセンチメント表示 -->
+        <div class="condition-panel animate-fade">
+            <h3 style="margin-bottom: 20px;">リアルタイムセンチメント</h3>
+            <div class="sentiment-indicator">
+                <div class="sentiment-pointer" style="left: 65%;">72</div>
+            </div>
+            <div class="sentiment-labels">
+                <span style="color: #ef4444;">極度の恐怖 (0-20)</span>
+                <span style="color: #f59e0b;">警戒 (20-40)</span>
+                <span style="color: #6b7280;">中立 (40-60)</span>
+                <span style="color: #10b981;">楽観 (60-80)</span>
+                <span style="color: #059669;">極度の楽観 (80-100)</span>
+            </div>
+        </div>
+
+        <!-- 新規条件設定パネル -->
+        <div class="condition-panel animate-fade">
+            <div class="panel-header">
+                <h2 class="panel-title">新しい売買条件を作成</h2>
+                <button class="btn-primary" onclick="saveCondition()">条件を保存</button>
+            </div>
+
+            <form class="condition-form">
+                <!-- 基本情報 -->
+                <div class="form-group">
+                    <label class="form-label">条件名</label>
+                    <span class="form-hint">この条件を識別するための名前を入力してください</span>
+                    <input type="text" class="form-control" placeholder="例: ビットコイン上昇トレンド狙い" value="センチメント高値での自動購入">
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">取引対象</label>
+                    <select class="form-control">
+                        <option selected>ビットコイン (BTC/JPY)</option>
+                        <option>イーサリアム (ETH/JPY)</option>
+                        <option>リップル (XRP/JPY)</option>
+                        <option>ライトコイン (LTC/JPY)</option>
+                    </select>
+                </div>
+
+                <!-- 条件設定 -->
+                <div class="form-group">
+                    <label class="form-label">実行条件</label>
+                    <span class="form-hint">どのような条件で売買を実行するかを設定します</span>
+                    
+                    <div id="conditionBuilder" class="condition-builder">
+                        <div class="condition-item">
+                            <select class="form-control condition-select">
+                                <option>ニュースセンチメント</option>
+                                <option>価格</option>
+                                <option>出来高</option>
+                                <option>RSI</option>
+                                <option>特定キーワードの出現</option>
+                            </select>
+                            <select class="form-control condition-operator">
+                                <option>が</option>
+                                <option>以上なら</option>
+                                <option>以下なら</option>
+                                <option>と等しいなら</option>
+                            </select>
+                            <input type="number" class="form-control condition-value" placeholder="値" value="80">
+                            <button type="button" class="btn-remove" onclick="removeCondition(this)">削除</button>
+                        </div>
+                        <button type="button" class="btn-add-condition" onclick="addCondition()">＋ 条件を追加</button>
+                    </div>
+                </div>
+
+                <!-- アクション設定 -->
+                <div class="form-group">
+                    <label class="form-label">実行アクション</label>
+                    <span class="form-hint">条件が満たされた時の動作を選択します</span>
+                    
+                    <div class="action-settings">
+                        <div class="action-card selected" onclick="selectAction(this, 'buy')">
+                            <div class="action-title">買い注文</div>
+                            <div class="action-description">指定した条件で自動的に買い注文を実行します</div>
+                        </div>
+                        <div class="action-card" onclick="selectAction(this, 'sell')">
+                            <div class="action-title">売り注文</div>
+                            <div class="action-description">指定した条件で自動的に売り注文を実行します</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 注文詳細 -->
+                <div class="form-group">
+                    <label class="form-label">注文数量</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <input type="number" class="form-control" placeholder="数量" value="0.01">
+                        <select class="form-control">
+                            <option>BTC</option>
+                            <option>円相当</option>
+                            <option>保有資産の％</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- リスク管理 -->
+                <div class="form-group">
+                    <label class="form-label">リスク管理設定</label>
+                    <span class="form-hint">損失を限定するための設定（オプション）</span>
+                    
+                    <div style="display: grid; gap: 15px;">
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <input type="checkbox" id="stopLoss" checked>
+                            <label for="stopLoss" style="flex: 1;">ストップロス</label>
+                            <input type="number" class="form-control" style="width: 150px;" placeholder="%" value="5">
+                            <span>%下落で売却</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 15px;">
+                            <input type="checkbox" id="takeProfit" checked>
+                            <label for="takeProfit" style="flex: 1;">利益確定</label>
+                            <input type="number" class="form-control" style="width: 150px;" placeholder="%" value="10">
+                            <span>%上昇で売却</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 有効期限 -->
+                <div class="form-group">
+                    <label class="form-label">条件の有効期限</label>
+                    <select class="form-control">
+                        <option>無期限</option>
+                        <option>今日のみ</option>
+                        <option>1週間</option>
+                        <option>1ヶ月</option>
+                        <option>カスタム期間</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+
+        <!-- 現在アクティブな条件一覧 -->
+        <div class="condition-panel animate-fade">
+            <h2 class="panel-title" style="margin-bottom: 30px;">アクティブな売買条件</h2>
+            
+            <div class="history-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>条件名</th>
+                            <th>取引対象</th>
+                            <th>条件</th>
+                            <th>ステータス</th>
+                            <th>作成日時</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>高センチメント買い</strong></td>
+                            <td>BTC/JPY</td>
+                            <td>センチメント ≥ 85</td>
+                            <td><span class="badge badge-success">有効</span></td>
+                            <td>2024/10/28 09:30</td>
+                            <td>
+                                <button onclick="toggleCondition(this)" style="padding: 6px 12px; border: none; background: #ef4444; color: white; border-radius: 4px; cursor: pointer; font-size: 12px;">停止</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>パニック売り検知</strong></td>
+                            <td>BTC/JPY</td>
+                            <td>センチメント ≤ 20</td>
+                            <td><span class="badge badge-warning">待機中</span></td>
+                            <td>2024/10/27 14:15</td>
+                            <td>
+                                <button onclick="toggleCondition(this)" style="padding: 6px 12px; border: none; background: #ef4444; color: white; border-radius: 4px; cursor: pointer; font-size: 12px;">停止</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>キーワード売却</strong></td>
+                            <td>ETH/JPY</td>
+                            <td>"規制"がトレンド入り</td>
+                            <td><span class="badge badge-success">有効</span></td>
+                            <td>2024/10/26 18:45</td>
+                            <td>
+                                <button onclick="toggleCondition(this)" style="padding: 6px 12px; border: none; background: #ef4444; color: white; border-radius: 4px; cursor: pointer; font-size: 12px;">停止</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 最近の取引履歴 -->
+        <div class="condition-panel animate-fade">
+            <h2 class="panel-title" style="margin-bottom: 30px;">最近の自動取引履歴</h2>
+            
+            <div class="history-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>実行日時</th>
+                            <th>条件名</th>
+                            <th>取引</th>
+                            <th>数量</th>
+                            <th>価格</th>
+                            <th>損益</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2024/10/29 14:32</td>
+                            <td>高センチメント買い</td>
+                            <td><span class="badge badge-success">買い</span></td>
+                            <td>0.01 BTC</td>
+                            <td>¥4,235,000</td>
+                            <td style="color: #10b981;">+¥2,350</td>
+                        </tr>
+                        <tr>
+                            <td>2024/10/29 09:15</td>
+                            <td>利益確定売り</td>
+                            <td><span class="badge badge-danger">売り</span></td>
+                            <td>0.02 BTC</td>
+                            <td>¥4,280,000</td>
+                            <td style="color: #10b981;">+¥12,400</td>
+                        </tr>
+                        <tr>
+                            <td>2024/10/28 22:48</td>
+                            <td>キーワード売却</td>
+                            <td><span class="badge badge-danger">売り</span></td>
+                            <td>0.5 ETH</td>
+                            <td>¥285,000</td>
+                            <td style="color: #ef4444;">-¥1,250</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // 条件を追加する関数
+        function addCondition() {
+            const conditionHtml = `
+                <div class="condition-item">
+                    <select class="form-control condition-select">
+                        <option>ニュースセンチメント</option>
+                        <option>価格</option>
+                        <option>出来高</option>
+                        <option>RSI</option>
+                        <option>特定キーワードの出現</option>
+                    </select>
+                    <select class="form-control condition-operator">
+                        <option>が</option>
+                        <option>以上なら</option>
+                        <option>以下なら</option>
+                        <option>と等しいなら</option>
+                    </select>
+                    <input type="number" class="form-control condition-value" placeholder="値">
+                    <button type="button" class="btn-remove" onclick="removeCondition(this)">削除</button>
+                </div>
+            `;
+            
+            const addButton = document.querySelector('.btn-add-condition');
+            addButton.insertAdjacentHTML('beforebegin', conditionHtml);
+        }
+
+        // 条件を削除する関数
+        function removeCondition(button) {
+            button.parentElement.remove();
+        }
+
+        // アクションを選択する関数
+        function selectAction(card, action) {
+            document.querySelectorAll('.action-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+        }
+
+        // 条件を保存する関数（モック）
+        function saveCondition() {
+            alert('条件を保存しました！\n\n条件名: センチメント高値での自動購入\n取引対象: ビットコイン\n条件: センチメントが80以上\nアクション: 買い注文\n\n※これはモックアップです。実際の保存処理は実装されていません。');
+        }
+
+        // 条件のオン/オフを切り替える関数（モック）
+        function toggleCondition(button) {
+            if (button.textContent === '停止') {
+                button.textContent = '開始';
+                button.style.background = '#10b981';
+                alert('条件を一時停止しました。');
+            } else {
+                button.textContent = '停止';
+                button.style.background = '#ef4444';
+                alert('条件を再開しました。');
+            }
+        }
+
+        // センチメントポインターのアニメーション
+        function animateSentiment() {
+            const pointer = document.querySelector('.sentiment-pointer');
+            const value = Math.floor(Math.random() * 20) + 65; // 65-85の間でランダム
+            pointer.style.left = value + '%';
+            pointer.textContent = value;
+            
+            // ステータスカードの値も更新
+            document.querySelector('.status-value').textContent = value;
+        }
+
+        // 5秒ごとにセンチメントを更新
+        setInterval(animateSentiment, 5000);
+    </script>
+</body>
+</html>

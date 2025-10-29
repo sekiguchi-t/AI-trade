@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoTrade AI - ビジュアル条件エディター</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #1a1a2e;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        /* ヘッダー */
+        .header {
+            background: #0f0f23;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            border-bottom: 2px solid #2a2a4e;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #2a2a4e;
+            color: white;
+        }
+
+        .btn:hover {
+            background: #3a3a5e;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        /* サイドバー */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 60px;
+            width: 250px;
+            height: calc(100vh - 60px);
+            background: #0f0f23;
+            border-right: 2px solid #2a2a4e;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            font-size: 14px;
+            text-transform: uppercase;
+            color: #8892b0;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .node-template {
+            background: #2a2a4e;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            cursor: grab;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .node-template:hover {
+            background: #3a3a5e;
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .node-template:active {
+            cursor: grabbing;
+        }
+
+        .node-category {
+            margin-bottom: 30px;
+        }
+
+        /* キャンバス */
+        .canvas-container {
+            position: fixed;
+            left: 250px;
+            top: 60px;
+            right: 0;
+            bottom: 0;
+            background: #16213e;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        /* ノード */
+        .node {
+            position: absolute;
+            background: #2a2a4e;
+            border: 2px solid #3a3a5e;
+            border-radius: 10px;
+            min-width: 200px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            cursor: move;
+            user-select: none;
+        }
+
+        .node.selected {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3), 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .node-header {
+            background: #1a1a2e;
+            padding: 10px 15px;
+            border-radius: 8px 8px 0 0;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .node-type-input .node-header { background: #2d3561; }
+        .node-type-condition .node-header { background: #4a5f7a; }
+        .node-type-action .node-header { background: #5e4c7a; }
+        .node-type-output .node-header { background: #4c7a5e; }
+
+        .node-close {
+            width: 20px;
+            height: 20px;
+            background: rgba(239, 68, 68, 0.8);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .node-close:hover {
+            background: #ef4444;
+        }
+
+        .node-body {
+            padding: 15px;
+        }
+
+        .node-field {
+            margin-bottom: 10px;
+        }
+
+        .node-field label {
+            font-size: 12px;
+            color: #8892b0;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .node-field input,
+        .node-field select {
+            width: 100%;
+            padding: 6px 10px;
+            background: #1a1a2e;
+            border: 1px solid #3a3a5e;
+            border-radius: 4px;
+            color: white;
+            font-size: 13px;
+        }
+
+        /* ポート */
+        .port {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: #4a5f7a;
+            border: 2px solid #8892b0;
+            border-radius: 50%;
+            cursor: crosshair;
+            z-index: 10;
+        }
+
+        .port:hover {
+            background: #667eea;
+            border-color: #667eea;
+        }
+
+        .port-input {
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .port-output {
+            right: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .port.connected {
+            background: #10b981;
+            border-color: #10b981;
+        }
+
+        /* 接続線 */
+        .connection {
+            position: absolute;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .connection-path {
+            stroke: #667eea;
+            stroke-width: 3;
+            fill: none;
+            filter: drop-shadow(0 0 5px rgba(102, 126, 234, 0.5));
+        }
+
+        .connection-path.preview {
+            stroke-dasharray: 5;
+            opacity: 0.5;
+        }
+
+        /* 右クリックメニュー */
+        .context-menu {
+            position: absolute;
+            background: #0f0f23;
+            border: 1px solid #2a2a4e;
+            border-radius: 8px;
+            padding: 5px 0;
+            min-width: 150px;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+
+        .context-menu-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .context-menu-item:hover {
+            background: #2a2a4e;
+        }
+
+        /* インフォパネル */
+        .info-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 270px;
+            background: #0f0f23;
+            padding: 15px 20px;
+            border-radius: 8px;
+            border: 2px solid #2a2a4e;
+            font-size: 13px;
+        }
+
+        .info-panel span {
+            margin-right: 20px;
+            color: #8892b0;
+        }
+
+        .info-panel .value {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        /* 実行プレビュー */
+        .execution-preview {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            width: 300px;
+            background: #0f0f23;
+            border: 2px solid #2a2a4e;
+            border-radius: 8px;
+            padding: 20px;
+            display: none;
+        }
+
+        .execution-preview h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .execution-step {
+            background: #2a2a4e;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        .execution-step.active {
+            background: #3a3a5e;
+            border: 1px solid #667eea;
+        }
+
+        /* アニメーション */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- ヘッダー -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">🔗</div>
+            <span>AutoTrade AI - ビジュアルエディター</span>
+        </div>
+        <div class="toolbar">
+            <button class="btn" onclick="clearCanvas()">クリア</button>
+            <button class="btn" onclick="validateFlow()">検証</button>
+            <button class="btn" onclick="previewExecution()">実行プレビュー</button>
+            <button class="btn btn-primary" onclick="saveStrategy()">戦略を保存</button>
+        </div>
+    </div>
+
+    <!-- サイドバー -->
+    <div class="sidebar">
+        <div class="node-category">
+            <h3>📊 データソース</h3>
+            <div class="node-template" draggable="true" data-type="input" data-subtype="sentiment">
+                <div>🎭 センチメント分析</div>
+                <small style="color: #8892b0; font-size: 11px;">リアルタイムの市場感情</small>
+            </div>
+            <div class="node-template" draggable="true" data-type="input" data-subtype="price">
+                <div>💰 価格データ</div>
+                <small style="color: #8892b0; font-size: 11px;">現在の市場価格</small>
+            </div>
+            <div class="node-template" draggable="true" data-type="input" data-subtype="keyword">
+                <div>🔍 キーワード検出</div>
+                <small style="color: #8892b0; font-size: 11px;">SNSトレンド監視</small>
+            </div>
+            <div class="node-template" draggable="true" data-type="input" data-subtype="volume">
+                <div>📈 取引量</div>
+                <small style="color: #8892b0; font-size: 11px;">出来高データ</small>
+            </div>
+        </div>
+
+        <div class="node-category">
+            <h3>⚡ 条件・ロジック</h3>
+            <div class="node-template" draggable="true" data-type="condition" data-subtype="compare">
+                <div>⚖️ 比較</div>
+                <small style="color: #8892b0; font-size: 11px;">大小比較、等価判定</small>
+            </div>
+            <div class="node-template" draggable="true" data-type="condition" data-subtype="and">
+                <div>🔀 AND条件</div>
+                <small style="color: #8892b0; font-size: 11px;">複数条件の同時成立</small>
+            </div>
+            <div class="node-template" draggable="true" data-type="condition" data-subtype="or">
+                <div>🔄 OR条件</div>
+                <small style="color: #8892b0; font-size: 11px;">いずれかの条件成立</small>
+            </div>
+            <div class="node-template" draggable="true" data-type="condition" data-subtype="threshold">
+                <div>🎯 しきい値</div>
+                <small style="color: #8892b0; font-size: 11px;">上限・下限の設定</small>
+            </div>
+        </div>
+
+        <div class="node-category">
+            <h3>🎬 アクション</h3>
+            <div class="node-template" draggable="true" data-type="action" data-subtype="buy">
+                <div>💸 買い注文</div>
+                <small style="color: #8892b0; font-size: 11px;">購入実行</small>
+            </div>
+            <div class="node-template" draggable="true" data-type="action" data-subtype="sell">
+                <div>💹 売り注文</div>
+                <small style="color: #8892b0; font-size: 11px;">売却実行</small>
+            </div>
+            <div class="node-template" draggable="true" data-type="action" data-subtype="alert">
+                <div>🔔 アラート</div>
+                <small style="color: #8892b0; font-size: 11px;">通知送信</small>
+            </div>
+        </div>
+
+        <div class="node-category">
+            <h3>🎯 出力</h3>
+            <div class="node-template" draggable="true" data-type="output" data-subtype="execute">
+                <div>✅ 実行</div>
+                <small style="color: #8892b0; font-size: 11px;">最終的な実行ノード</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- キャンバス -->
+    <div class="canvas-container">
+        <div id="canvas">
+            <svg id="connections" style="position: absolute; width: 100%; height: 100%; pointer-events: none;">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="7" 
+                            refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#667eea" />
+                    </marker>
+                </defs>
+            </svg>
+        </div>
+    </div>
+
+    <!-- インフォパネル -->
+    <div class="info-panel">
+        <span>ノード数: <span class="value" id="nodeCount">0</span></span>
+        <span>接続数: <span class="value" id="connectionCount">0</span></span>
+        <span>ヒント: ノードをドラッグ&ドロップで配置、ポートをクリックして接続</span>
+    </div>
+
+    <!-- 右クリックメニュー -->
+    <div class="context-menu" id="contextMenu">
+        <div class="context-menu-item" onclick="deleteNode()">削除</div>
+        <div class="context-menu-item" onclick="duplicateNode()">複製</div>
+        <div class="context-menu-item" onclick="editNode()">編集</div>
+    </div>
+
+    <!-- 実行プレビュー -->
+    <div class="execution-preview" id="executionPreview">
+        <h3>実行フロー プレビュー</h3>
+        <div id="executionSteps"></div>
+    </div>
+
+    <script>
+        let nodes = [];
+        let connections = [];
+        let selectedNode = null;
+        let connectingFrom = null;
+        let nodeIdCounter = 0;
+        let draggedNode = null;
+        let dragOffset = { x: 0, y: 0 };
+
+        const canvas = document.getElementById('canvas');
+        const svg = document.getElementById('connections');
+
+        // ドラッグ&ドロップでノード追加
+        document.querySelectorAll('.node-template').forEach(template => {
+            template.addEventListener('dragstart', (e) => {
+                e.dataTransfer.setData('type', template.dataset.type);
+                e.dataTransfer.setData('subtype', template.dataset.subtype);
+            });
+        });
+
+        canvas.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData('type');
+            const subtype = e.dataTransfer.getData('subtype');
+            
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            createNode(type, subtype, x, y);
+        });
+
+        // ノード作成関数
+        function createNode(type, subtype, x, y) {
+            const node = {
+                id: nodeIdCounter++,
+                type: type,
+                subtype: subtype,
+                x: x,
+                y: y
+            };
+            
+            const nodeElement = document.createElement('div');
+            nodeElement.className = `node node-type-${type}`;
+            nodeElement.id = `node-${node.id}`;
+            nodeElement.style.left = x + 'px';
+            nodeElement.style.top = y + 'px';
+            
+            let content = '';
+            let title = '';
+            let hasInput = true;
+            let hasOutput = true;
+            
+            // ノードタイプごとのコンテンツ
+            switch(subtype) {
+                case 'sentiment':
+                    title = 'センチメント分析';
+                    hasInput = false;
+                    content = '<div class="node-field"><label>更新頻度</label><select><option>リアルタイム</option><option>1分ごと</option><option>5分ごと</option></select></div>';
+                    break;
+                case 'price':
+                    title = '価格データ';
+                    hasInput = false;
+                    content = '<div class="node-field"><label>通貨ペア</label><select><option>BTC/JPY</option><option>ETH/JPY</option><option>XRP/JPY</option></select></div>';
+                    break;
+                case 'keyword':
+                    title = 'キーワード検出';
+                    hasInput = false;
+                    content = '<div class="node-field"><label>キーワード</label><input type="text" placeholder="例: 規制, 暴落" value="規制"></div>';
+                    break;
+                case 'compare':
+                    title = '比較';
+                    content = '<div class="node-field"><label>条件</label><select><option>より大きい</option><option>より小さい</option><option>等しい</option></select></div><div class="node-field"><label>値</label><input type="number" value="80"></div>';
+                    break;
+                case 'and':
+                    title = 'AND条件';
+                    content = '<div style="text-align: center; padding: 20px;">すべての入力が<br>真の場合に出力</div>';
+                    break;
+                case 'buy':
+                    title = '買い注文';
+                    hasOutput = false;
+                    content = '<div class="node-field"><label>数量</label><input type="number" value="0.01" step="0.01"></div><div class="node-field"><label>単位</label><select><option>BTC</option><option>円相当</option></select></div>';
+                    break;
+                case 'sell':
+                    title = '売り注文';
+                    hasOutput = false;
+                    content = '<div class="node-field"><label>数量</label><input type="number" value="0.01" step="0.01"></div><div class="node-field"><label>単位</label><select><option>BTC</option><option>％</option></select></div>';
+                    break;
+                case 'execute':
+                    title = '実行';
+                    hasOutput = false;
+                    content = '<div style="text-align: center; padding: 20px;">条件成立時に<br>実行されます</div>';
+                    break;
+            }
+            
+            nodeElement.innerHTML = `
+                <div class="node-header">
+                    <span>${title}</span>
+                    <span class="node-close" onclick="deleteNodeById(${node.id})">×</span>
+                </div>
+                <div class="node-body">
+                    ${hasInput ? '<div class="port port-input" data-node-id="' + node.id + '" data-type="input"></div>' : ''}
+                    ${hasOutput ? '<div class="port port-output" data-node-id="' + node.id + '" data-type="output"></div>' : ''}
+                    ${content}
+                </div>
+            `;
+            
+            canvas.appendChild(nodeElement);
+            
+            // ノードのドラッグ
+            nodeElement.addEventListener('mousedown', startDragNode);
+            
+            // ポートのクリックイベント
+            nodeElement.querySelectorAll('.port').forEach(port => {
+                port.addEventListener('click', handlePortClick);
+            });
+            
+            // 右クリックメニュー
+            nodeElement.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                showContextMenu(e, node.id);
+            });
+            
+            nodes.push(node);
+            updateInfo();
+            
+            // アニメーション
+            nodeElement.classList.add('pulse');
+            setTimeout(() => nodeElement.classList.remove('pulse'), 500);
+        }
+
+        // ノードのドラッグ処理
+        function startDragNode(e) {
+            if (e.target.classList.contains('port') || e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') {
+                return;
+            }
+            
+            const nodeElement = e.currentTarget;
+            const nodeId = parseInt(nodeElement.id.replace('node-', ''));
+            const node = nodes.find(n => n.id === nodeId);
+            
+            draggedNode = node;
+            dragOffset.x = e.clientX - node.x;
+            dragOffset.y = e.clientY - node.y;
+            
+            document.addEventListener('mousemove', dragNode);
+            document.addEventListener('mouseup', stopDragNode);
+        }
+
+        function dragNode(e) {
+            if (!draggedNode) return;
+            
+            const rect = canvas.getBoundingClientRect();
+            draggedNode.x = e.clientX - rect.left - dragOffset.x;
+            draggedNode.y = e.clientY - rect.top - dragOffset.y;
+            
+            const nodeElement = document.getElementById(`node-${draggedNode.id}`);
+            nodeElement.style.left = draggedNode.x + 'px';
+            nodeElement.style.top = draggedNode.y + 'px';
+            
+            updateConnections();
+        }
+
+        function stopDragNode() {
+            draggedNode = null;
+            document.removeEventListener('mousemove', dragNode);
+            document.removeEventListener('mouseup', stopDragNode);
+        }
+
+        // ポートクリック処理
+        function handlePortClick(e) {
+            e.stopPropagation();
+            const port = e.target;
+            const nodeId = parseInt(port.dataset.nodeId);
+            const portType = port.dataset.type;
+            
+            if (connectingFrom === null) {
+                // 接続開始
+                connectingFrom = { nodeId, portType, element: port };
+                port.classList.add('connecting');
+                canvas.addEventListener('mousemove', drawPreviewConnection);
+            } else {
+                // 接続完了
+                if (connectingFrom.portType !== portType && connectingFrom.nodeId !== nodeId) {
+                    createConnection(connectingFrom.nodeId, nodeId);
+                }
+                cancelConnection();
+            }
+        }
+
+        // 接続線のプレビュー
+        function drawPreviewConnection(e) {
+            // 既存のプレビューを削除
+            const existingPreview = svg.querySelector('.preview');
+            if (existingPreview) existingPreview.remove();
+            
+            const rect = canvas.getBoundingClientRect();
+            const fromPort = connectingFrom.element;
+            const fromRect = fromPort.getBoundingClientRect();
+            
+            const x1 = fromRect.left - rect.left + fromRect.width / 2;
+            const y1 = fromRect.top - rect.top + fromRect.height / 2;
+            const x2 = e.clientX - rect.left;
+            const y2 = e.clientY - rect.top;
+            
+            const path = createPath(x1, y1, x2, y2);
+            path.classList.add('preview');
+            svg.appendChild(path);
+        }
+
+        // 接続作成
+        function createConnection(fromNodeId, toNodeId) {
+            const connection = {
+                id: connections.length,
+                from: fromNodeId,
+                to: toNodeId
+            };
+            
+            connections.push(connection);
+            updateConnections();
+            updateInfo();
+        }
+
+        // 接続線の更新
+        function updateConnections() {
+            // 既存の接続線を削除（プレビュー以外）
+            svg.querySelectorAll('.connection-path:not(.preview)').forEach(path => path.remove());
+            
+            connections.forEach(conn => {
+                const fromNode = document.querySelector(`#node-${conn.from} .port-output`);
+                const toNode = document.querySelector(`#node-${conn.to} .port-input`);
+                
+                if (fromNode && toNode) {
+                    const rect = canvas.getBoundingClientRect();
+                    const fromRect = fromNode.getBoundingClientRect();
+                    const toRect = toNode.getBoundingClientRect();
+                    
+                    const x1 = fromRect.left - rect.left + fromRect.width / 2;
+                    const y1 = fromRect.top - rect.top + fromRect.height / 2;
+                    const x2 = toRect.left - rect.left + toRect.width / 2;
+                    const y2 = toRect.top - rect.top + toRect.height / 2;
+                    
+                    const path = createPath(x1, y1, x2, y2);
+                    svg.appendChild(path);
+                    
+                    fromNode.classList.add('connected');
+                    toNode.classList.add('connected');
+                }
+            });
+        }
+
+        // ベジェ曲線パスを作成
+        function createPath(x1, y1, x2, y2) {
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            const dx = Math.abs(x2 - x1);
+            const cp1x = x1 + dx * 0.5;
+            const cp2x = x2 - dx * 0.5;
+            
+            const d = `M ${x1} ${y1} C ${cp1x} ${y1}, ${cp2x} ${y2}, ${x2} ${y2}`;
+            path.setAttribute('d', d);
+            path.setAttribute('class', 'connection-path');
+            path.setAttribute('marker-end', 'url(#arrowhead)');
+            
+            return path;
+        }
+
+        // 接続キャンセル
+        function cancelConnection() {
+            if (connectingFrom) {
+                connectingFrom.element.classList.remove('connecting');
+                connectingFrom = null;
+            }
+            canvas.removeEventListener('mousemove', drawPreviewConnection);
+            const preview = svg.querySelector('.preview');
+            if (preview) preview.remove();
+        }
+
+        // クリックでキャンセル
+        canvas.addEventListener('click', () => {
+            if (connectingFrom) {
+                cancelConnection();
+            }
+        });
+
+        // ノード削除
+        function deleteNodeById(nodeId) {
+            const nodeElement = document.getElementById(`node-${nodeId}`);
+            if (nodeElement) nodeElement.remove();
+            
+            nodes = nodes.filter(n => n.id !== nodeId);
+            connections = connections.filter(c => c.from !== nodeId && c.to !== nodeId);
+            
+            updateConnections();
+            updateInfo();
+        }
+
+        // 情報更新
+        function updateInfo() {
+            document.getElementById('nodeCount').textContent = nodes.length;
+            document.getElementById('connectionCount').textContent = connections.length;
+        }
+
+        // 右クリックメニュー
+        function showContextMenu(e, nodeId) {
+            selectedNode = nodeId;
+            const menu = document.getElementById('contextMenu');
+            menu.style.display = 'block';
+            menu.style.left = e.pageX + 'px';
+            menu.style.top = e.pageY + 'px';
+        }
+
+        // クリックで閉じる
+        document.addEventListener('click', () => {
+            document.getElementById('contextMenu').style.display = 'none';
+        });
+
+        // ノード削除（メニューから）
+        function deleteNode() {
+            if (selectedNode !== null) {
+                deleteNodeById(selectedNode);
+            }
+        }
+
+        // フロー検証
+        function validateFlow() {
+            let hasInput = false;
+            let hasOutput = false;
+            let message = '';
+            
+            nodes.forEach(node => {
+                if (node.type === 'input') hasInput = true;
+                if (node.type === 'output' || node.type === 'action') hasOutput = true;
+            });
+            
+            if (!hasInput) {
+                message = '❌ データソースが設定されていません';
+            } else if (!hasOutput) {
+                message = '❌ アクションが設定されていません';
+            } else if (connections.length === 0) {
+                message = '❌ ノードが接続されていません';
+            } else {
+                message = '✅ フローは有効です！';
+            }
+            
+            alert(message);
+        }
+
+        // 実行プレビュー
+        function previewExecution() {
+            const preview = document.getElementById('executionPreview');
+            const steps = document.getElementById('executionSteps');
+            
+            steps.innerHTML = '';
+            
+            // 簡易的な実行順序を生成
+            const executionOrder = [
+                '1. センチメントデータを取得（現在値: 82）',
+                '2. 設定値（80）と比較',
+                '3. 条件成立: 82 > 80',
+                '4. 買い注文を実行（0.01 BTC）',
+                '5. 注文送信完了'
+            ];
+            
+            executionOrder.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.className = 'execution-step';
+                stepDiv.textContent = step;
+                steps.appendChild(stepDiv);
+                
+                // アニメーション
+                setTimeout(() => {
+                    stepDiv.classList.add('active');
+                }, index * 300);
+            });
+            
+            preview.style.display = 'block';
+        }
+
+        // キャンバスクリア
+        function clearCanvas() {
+            if (confirm('すべてのノードを削除しますか？')) {
+                nodes = [];
+                connections = [];
+                nodeIdCounter = 0;
+                
+                document.querySelectorAll('.node').forEach(node => node.remove());
+                updateConnections();
+                updateInfo();
+            }
+        }
+
+        // 戦略保存（モック）
+        function saveStrategy() {
+            const strategy = {
+                nodes: nodes,
+                connections: connections,
+                timestamp: new Date().toISOString()
+            };
+            
+            alert(`戦略を保存しました！\n\nノード数: ${nodes.length}\n接続数: ${connections.length}\n\n※これはモックアップです。実際の保存処理は実装されていません。`);
+            console.log('保存される戦略データ:', strategy);
+        }
+
+        // サンプルフローの作成
+        function createSampleFlow() {
+            // センチメントノード
+            createNode('input', 'sentiment', 100, 200);
+            
+            // 比較ノード
+            createNode('condition', 'compare', 350, 200);
+            
+            // 買い注文ノード
+            createNode('action', 'buy', 600, 200);
+            
+            // 接続を作成
+            setTimeout(() => {
+                createConnection(0, 1);
+                createConnection(1, 2);
+                updateConnections();
+            }, 100);
+        }
+
+        // 初期表示でサンプルを作成
+        createSampleFlow();
+    </script>
+</body>
+</html>
